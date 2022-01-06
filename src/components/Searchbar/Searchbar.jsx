@@ -1,51 +1,51 @@
-import React, { Component } from 'react';
+import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { FcSearch } from 'react-icons/fc';
+import PropTypes from 'prop-types';
 import s from './Searchbar.module.css'
 
-export default class Searchbar extends Component {
-    state = {
-        imageName: '',
-    };
-    
-    onNameChange = ({ currentTarget: { value }}) => {
-        this.setState({ imageName: value.toLowerCase() });
+export default function Searchbar ({onSubmit}) {
+    const [imageName, setImageName] = useState('')
+
+    const onNameChange = evt => {
+    setImageName(evt.currentTarget.value.toLowerCase());
     };
 
-    onSubmit = evt => {
+    const onSubmitForm = evt => {
         evt.preventDefault();
 
-        if (this.state.imageName.trim() === '') {
+        if (imageName.trim() === '') {
         toast.warning('Введите запрос');
         return;
     }
 
-        this.props.onSubmit(this.state.imageName);
-        this.setState({ imageName: '' });
+        onSubmit(imageName);
+        setImageName('');
   };
 
-    render() {
-        const { imageName } = this.state;
-
-        return (
-            <header className={s.Searchbar}>
-                <form
-                onSubmit={this.onSubmit}
-                autoComplete="off"
-                >
-                <input
-                className={s.SearchFormInput}        
-                type="text"
-                autoComplete="off"
-                autoFocus
-                value={imageName}
-                onChange={this.onNameChange}
-                />
-                <button type="submit" className={s.SearchFormButton}>
-                <FcSearch/>
-                </button>
-                </form>
-            </header>
-    );
-  }
+  return (
+    <header className={s.Searchbar}>
+        <form
+        onSubmit={onSubmitForm}
+        autoComplete="off"
+        >
+        <input
+        className={s.SearchFormInput}        
+        type="text"
+        autoComplete="off"
+        autoFocus
+        value={imageName}
+        onChange={onNameChange}
+        />
+        <button type="submit" className={s.SearchFormButton}>
+        <FcSearch/>
+        </button>
+        </form>
+    </header>
+  )
 }
+
+Searchbar.propTypes = {
+    onSubmit: PropTypes.func.isRequired
+}
+

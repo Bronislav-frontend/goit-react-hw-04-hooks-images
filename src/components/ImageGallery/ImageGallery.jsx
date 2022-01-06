@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { toast } from 'react-toastify';
 import ImageDataView from './ImageDataView/ImageDataView';
@@ -7,77 +7,60 @@ import { fetchImages } from '../../services/serviceAPI';
 import Button from '../Button/Button';
 import s from './ImageGallery.module.css'
 
-export default class ImageGallery extends Component {
-  state = {
-    imagesArray: [],
-    page: 1,
-    status: 'idle',
-  };
+export default function ImageGallery ({imageName, openModal}) {
+  const [imagesArray, setImagesArray] = useState([]);
+  const [page, setPage] = useState(1);
+  const [status, setStatus] = useState('idle')
 
-  async componentDidUpdate(prevProps, prevState) {
-    const prevName = prevProps.imageName;
-    const nextName = this.props.imageName;
-    const prevPage = prevState.page;
-    const nextPage = this.state.page;
-
-    if (prevName !== nextName) {
-      this.setState({ imagesArray: [] });
+  useEffect(() => {
+    if (!imageName) {
+      return
     }
+    
 
-    if (prevName !== nextName || prevPage !== nextPage) {
-      this.setState({ status: 'pending' });
-
+    const fetchGallery = async () => {
+      setStatus('pending');
       const { hits: newImagesArray, totalHits: totalImages } =
-        await fetchImages(nextName, nextPage)
-      
-       if (newImagesArray.length === 0 && totalImages === 0) {
-            toast.error('Ничего не найдено =(');
-            return;
-          }
-          if (newImagesArray.length === 0 && totalImages !== 0) {
-            toast.warning('Больше картинок по Вашему запросу нет');
-            return;
-          }
-          if (nextPage === 1) {
-            toast.success(`!WOW! Мы нашли аж ${totalImages} картинок по Вашему запросу`);
-          }
+      await fetchImages(imageName, page);
+      if (newImagesArray.length === 0 && totalImages === 0) {
+        toast.error('Ничего не найдено =(');
+        return;
+      }
+      if (newImagesArray.length === 0 && totalImages !== 0) {
+        toast.warning('Больше картинок по Вашему запросу нет');
+        return;
+      }
+      if (page === 1) {
+        toast.success(`!WOW! Мы нашли аж ${totalImages} картинок по Вашему запросу`);
+      }
+      setImagesArray([...imagesArray, ...newImagesArray]);
+      setStatus('resolved');
+    };  fetchGallery()
+  }, [imageName, page])
 
-          this.setState(({ imagesArray }) => ({
-            imagesArray: [...imagesArray, ...newImagesArray],
-            status: 'resolved',
-          }));
-    }
+
+  const updatePage = () => {
+    setPage(page => page+1)
   }
 
-  updatePage = () => {
-    this.setState(prevState => {
-      return { page: prevState.page + 1 };
-    });
-  };
+  return (
+    <>
+    {status === 'idle' && (
+      <h2 className={s.title}>Введите запрос</h2>
+    )}
 
-  render() {
-    const { imagesArray, status } = this.state;
-    const { openModal } = this.props;
+    {status === 'pending' && <ImagePending/>}
 
-    return (
+    {(status === 'resolved' || status === 'pending') && (
       <>
-        {status === 'idle' && (
-          <h2 className={s.title}>Введите запрос</h2>
-        )}
-
-        {status === 'pending' && <ImagePending/>}
-
-        {(status === 'resolved' || status === 'pending') && (
-          <>
-          <ImageDataView imagesArray={imagesArray} openModal={openModal}/>
-          <Button onClick={this.updatePage} />
-          </>
-        )}
-
-        {status === 'rejected' && toast.error('Что-то пошло не так')}
+      <ImageDataView imagesArray={imagesArray} openModal={openModal}/>
+      <Button onClick={updatePage} />
       </>
-    );
-  }
+    )}
+
+    {status === 'rejected' && toast.error('Что-то пошло не так')}
+  </>
+  )
 }
 
 ImageGallery.propTypes = {
